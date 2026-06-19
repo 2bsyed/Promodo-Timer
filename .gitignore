@@ -1,0 +1,12 @@
+# Xcode
+build/
+Build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.moved-aside
+*.xcuserstate
+*.playgrounds/
+# macOS
+.DS_Store

@@ -7,79 +7,66 @@ struct ContentView: View {
     @AppStorage("shortBreak") private var shortBreak = 5
     @AppStorage("longBreak") private var longBreak = 10
 
+    private let accentColor = Color(red: 241/255, green: 152/255, blue: 70/255)
+    private let bgColor = Color.black
+
     var body: some View {
-        VStack {
-            Text(viewModel.timeString(from: viewModel.remainingTime))
-                .font(.system(.largeTitle, design: .monospaced))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 20)
+        VStack(spacing: 0) {
+            // Ruler slider
+            RulerSliderView(
+                value: Binding(
+                    get: { viewModel.displayTime },
+                    set: { viewModel.displayTime = $0 }
+                ),
+                range: 0...180,
+                step: 1
+            )
+            .padding(.horizontal, 22)
+            .padding(.top, 18)
 
-            Slider(value: $viewModel.timerDuration, in: 1...60, step: 1)
-                .padding(.horizontal, 20)
-                .onReceive(viewModel.$timerDuration) { _ in
-                    viewModel.updateRemainingTime()
-                }
+            Spacer(minLength: 8)
 
-            HStack {
+            // Bottom row: button(s) + time display
+            HStack(alignment: .center) {
                 Button(action: viewModel.toggleTimer) {
                     Text(buttonText(for: viewModel.timerState))
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(accentColor)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(accentColor.opacity(0.12))
+                        )
                 }
                 .buttonStyle(PlainButtonStyle())
-
-                Button(action: viewModel.resetTimer) {
-                    Text("Reset")
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 20)
-
-            HStack {
-                Button(action: { viewModel.setPresetTimer(minutes: standardTimer) }) {
-                    Text("\(self.standardTimer) Min")
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: { viewModel.setPresetTimer(minutes: shortBreak) }) {
-                    Text("\(self.shortBreak) Min")
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: { viewModel.setPresetTimer(minutes: longBreak) }) {
-                    Text("\(self.longBreak) Min")
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 20)
-            .padding(.vertical)
-
-            HStack {
-                Button(action: {
-                    NSApplication.shared.terminate(nil)
-                }) {
-                    Text("Quit")
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.leading, 20)
 
                 Spacer()
 
-                Button("Detach Timer") {
-                    openTimerWindow()
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button("Settings") {
-                    openSettings()
-                }
-                .buttonStyle(PlainButtonStyle())
+                // Large time display
+                Text(viewModel.timeString(from: viewModel.remainingTime))
+                    .font(.system(size: 46, weight: .light, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .foregroundColor(accentColor)
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: 2) {
+                        viewModel.resetTimer()
+                    }
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 20)
+
+            .padding(.horizontal, 22)
+            .padding(.bottom, 18)
+            .animation(.easeInOut(duration: 0.2), value: viewModel.timerState)
         }
-        .frame(width: 300, height: 200)
+        .frame(width: 320, height: 140)
+        .background(bgColor)
+        .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
     }
+
+
+
 
     private func buttonText(for state: TimerState) -> String {
         switch state {
@@ -88,7 +75,7 @@ struct ContentView: View {
         case .paused:
             return "Resume"
         case .stopped:
-            return "Start"
+            return "Start Timer"
         }
     }
 
@@ -96,41 +83,95 @@ struct ContentView: View {
         let screen = NSScreen.main
         let screenRect = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
 
-        let windowWidth: CGFloat = 200
-        let windowHeight: CGFloat = 200
+        let windowWidth: CGFloat = 240
+        let windowHeight: CGFloat = 110
 
         let windowX = screenRect.midX - (windowWidth / 2)
         let windowY = screenRect.midY - (windowHeight / 2)
 
         let newWindow = NSWindow(
             contentRect: NSRect(x: windowX, y: windowY, width: windowWidth, height: windowHeight),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.borderless],
             backing: .buffered, defer: false)
+        
+        newWindow.isMovableByWindowBackground = true
         newWindow.center()
         newWindow.setFrameAutosaveName("TimerWindow")
         newWindow.isReleasedWhenClosed = false
         newWindow.level = .floating
+        newWindow.isOpaque = false
+        newWindow.backgroundColor = .clear
+        newWindow.hasShadow = true
+        
         newWindow.contentView = NSHostingView(rootView: timerView(viewModel: viewModel))
         newWindow.makeKeyAndOrderFront(nil)
     }
 
     func openSettings() {
+        for window in NSApplication.shared.windows {
+            if window.frameAutosaveName == "SettingsWindow" {
+                window.makeKeyAndOrderFront(nil)
+                return
+            }
+        }
+
         let screen = NSScreen.main
         let screenRect = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
-        let windowWidth: CGFloat = 400
-        let windowHeight: CGFloat = 300
+        let windowWidth: CGFloat = 340
+        let windowHeight: CGFloat = 240
         let windowX = screenRect.midX - (windowWidth / 2)
         let windowY = screenRect.midY - (windowHeight / 2)
 
         let newWindow = NSWindow(
             contentRect: NSRect(x: windowX, y: windowY, width: windowWidth, height: windowHeight),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.borderless],
             backing: .buffered, defer: false)
+        
+        newWindow.isMovableByWindowBackground = true
         newWindow.center()
         newWindow.setFrameAutosaveName("SettingsWindow")
         newWindow.isReleasedWhenClosed = false
         newWindow.level = .floating
+        newWindow.isOpaque = false
+        newWindow.backgroundColor = .clear
+        newWindow.hasShadow = true
+        
         newWindow.contentView = NSHostingView(rootView: settingsView(standardTimer: $standardTimer, shortBreak: $shortBreak, longBreak: $longBreak))
+        newWindow.makeKeyAndOrderFront(nil)
+    }
+
+    func openHistory() {
+        for window in NSApplication.shared.windows {
+            if window.frameAutosaveName == "HistoryWindow" {
+                window.makeKeyAndOrderFront(nil)
+                return
+            }
+        }
+
+        let screen = NSScreen.main
+        let screenRect = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
+
+        let windowWidth: CGFloat = 360
+        let windowHeight: CGFloat = 590
+
+        let windowX = screenRect.midX - (windowWidth / 2)
+        let windowY = screenRect.midY - (windowHeight / 2)
+
+        let newWindow = NSWindow(
+            contentRect: NSRect(x: windowX, y: windowY, width: windowWidth, height: windowHeight),
+            styleMask: [.borderless],
+            backing: .buffered, defer: false)
+        
+        newWindow.isMovableByWindowBackground = true
+        newWindow.center()
+        newWindow.setFrameAutosaveName("HistoryWindow")
+        newWindow.isReleasedWhenClosed = false
+        newWindow.level = .floating
+        newWindow.isOpaque = false
+        newWindow.backgroundColor = .clear
+        newWindow.hasShadow = true
+        
+        newWindow.contentView = NSHostingView(rootView: HistoryView())
         newWindow.makeKeyAndOrderFront(nil)
     }
 }
@@ -140,3 +181,4 @@ struct ContentView_Previews: PreviewProvider {
         ContentView(viewModel: TimerViewModel(duration: 25))
     }
 }
+

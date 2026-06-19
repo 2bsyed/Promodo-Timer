@@ -15,6 +15,20 @@ class TimerViewModel: ObservableObject {
         prepareAlarmSound()
     }
 
+    var displayTime: Double {
+        get {
+            if timerState == .stopped {
+                return timerDuration
+            } else {
+                return Double(remainingTime) / 60.0
+            }
+        }
+        set {
+            timerDuration = newValue
+            resetTimer()
+        }
+    }
+
     func toggleTimer() {
         switch timerState {
         case .running:
@@ -33,6 +47,7 @@ class TimerViewModel: ObservableObject {
             if self.remainingTime > 0 {
                 self.remainingTime -= 1
             } else {
+                TimerHistoryManager.shared.recordSession(durationMinutes: self.timerDuration)
                 self.resetTimer()
                 self.playAlarmSound()
             }
@@ -50,6 +65,7 @@ class TimerViewModel: ObservableObject {
             if self.remainingTime > 0 {
                 self.remainingTime -= 1
             } else {
+                TimerHistoryManager.shared.recordSession(durationMinutes: self.timerDuration)
                 self.resetTimer()
                 self.playAlarmSound()
             }
@@ -70,13 +86,20 @@ class TimerViewModel: ObservableObject {
     }
 
     func updateRemainingTime() {
-        remainingTime = Int(timerDuration) * 60
+        remainingTime = Int(timerDuration * 60)
     }
 
     func timeString(from seconds: Int) -> String {
-        let minutes = seconds / 60
-        let seconds = seconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+        if seconds >= 3600 {
+            let hours = seconds / 3600
+            let minutes = (seconds % 3600) / 60
+            let secs = seconds % 60
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        } else {
+            let minutes = seconds / 60
+            let secs = seconds % 60
+            return String(format: "%02d:%02d", minutes, secs)
+        }
     }
 
     private func prepareAlarmSound() {
@@ -94,3 +117,4 @@ class TimerViewModel: ObservableObject {
         audioPlayer?.play()
     }
 }
+

@@ -19,6 +19,9 @@
 		639436FD2C41E70F00D69BF1 /* SwiftUIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 639436FC2C41E70F00D69BF1 /* SwiftUIView.swift */; };
 		63A4CD2A2C44967A00A50D41 /* settingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A4CD292C44967A00A50D41 /* settingsView.swift */; };
 		63A4CD2F2C4621E900A50D41 /* LaunchAtLogin in Frameworks */ = {isa = PBXBuildFile; productRef = 63A4CD2E2C4621E900A50D41 /* LaunchAtLogin */; };
+		AA0000012C60000000000001 /* RulerSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000002C60000000000001 /* RulerSliderView.swift */; };
+		AA0000012C60000000000002 /* TimerHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000002C60000000000002 /* TimerHistoryManager.swift */; };
+		AA0000012C60000000000003 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000002C60000000000003 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +57,9 @@
 		637D39D12C3FA3DC0084ACA9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		639436FC2C41E70F00D69BF1 /* SwiftUIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftUIView.swift; sourceTree = "<group>"; };
 		63A4CD292C44967A00A50D41 /* settingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settingsView.swift; sourceTree = "<group>"; };
+		AA0000002C60000000000001 /* RulerSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulerSliderView.swift; sourceTree = "<group>"; };
+		AA0000002C60000000000002 /* TimerHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerHistoryManager.swift; sourceTree = "<group>"; };
+		AA0000002C60000000000003 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +115,9 @@
 				632108432C53E8B7002D790E /* TimerState.swift */,
 				637D39D12C3FA3DC0084ACA9 /* AppDelegate.swift */,
 				637D39A82C3F9D810084ACA9 /* ContentView.swift */,
+				AA0000002C60000000000001 /* RulerSliderView.swift */,
+				AA0000002C60000000000002 /* TimerHistoryManager.swift */,
+				AA0000002C60000000000003 /* HistoryView.swift */,
 				63A4CD292C44967A00A50D41 /* settingsView.swift */,
 				636EF0D82C4423BF004CEA6E /* timerView.swift */,
 				639436FC2C41E70F00D69BF1 /* SwiftUIView.swift */,
@@ -272,6 +281,9 @@
 				632108442C53E8B7002D790E /* TimerState.swift in Sources */,
 				637D39A72C3F9D810084ACA9 /* TimerApp.swift in Sources */,
 				639436FD2C41E70F00D69BF1 /* SwiftUIView.swift in Sources */,
+				AA0000012C60000000000001 /* RulerSliderView.swift in Sources */,
+				AA0000012C60000000000002 /* TimerHistoryManager.swift in Sources */,
+				AA0000012C60000000000003 /* HistoryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
