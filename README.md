@@ -2,7 +2,30 @@
 
 A beautiful, minimal, and completely free Pomodoro Timer for macOS that lives in your Menu Bar. Designed to help you stay focused, build productive habits, and track your daily & weekly work history.
 
-![Preview](preview.png)
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="preview/timer.png" width="400" alt="Main Timer View">
+  <br>
+  <i>Main Timer View (lives in the macOS status menu bar)</i>
+</p>
+
+<p align="center">
+  <img src="preview/timer_detached.png" width="320" alt="Detached Timer View">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="preview/settings.png" width="400" alt="Settings View">
+</p>
+<p align="center">
+  <i>Detached Floating Window (Left) & Glassmorphic Settings Panel (Right)</i>
+</p>
+
+<p align="center">
+  <img src="preview/history.png" width="400" alt="History Dashboard View">
+  <br>
+  <i>Apple Fitness-Style Activity Rings & Weekly/Monthly Metrics Dashboard</i>
+</p>
 
 ---
 
