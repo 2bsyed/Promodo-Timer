@@ -46,12 +46,24 @@ A beautiful, minimal, and completely free Pomodoro Timer for macOS that lives in
 ## 🚀 How to Install & Run
 
 1. Go to the [Releases](https://github.com/2bsyed/Promodo-Timer/releases) page of this repository.
-2. Download the `Promodo-Timer.zip` file.
-3. Extract the downloaded archive.
-4. Drag `Timer.app` to your **Applications** folder.
-5. Double-click to launch!
+2. Download the `Promodo-Timer.dmg` disk image.
+3. Open the disk image and drag the `Timer.app` icon onto the `Applications` folder shortcut.
+4. Launch the app!
 
-> **Note**: Because this application is not notarized by Apple, when launching for the first time, you may need to right-click (or Control-click) the application, select **Open**, and click **Open** in the confirmation dialog.
+### ⚠️ Troubleshooting: "Timer.app is damaged..." Error
+
+Because this application is not notarized by Apple, Gatekeeper will flag it with a message stating that it is **"damaged and can't be opened"** when downloaded from the internet.
+
+**To resolve this and allow the app to run:**
+
+1. Open your macOS **Terminal** app (search for it in Spotlight).
+2. Run the following command:
+   ```bash
+   xattr -cr /Applications/Timer.app
+   ```
+3. Open the app again, and it will run perfectly!
+
+Alternatively, you can right-click (or Control-click) `Timer.app` in your Applications folder, select **Open**, and then click **Open** in the confirmation dialog to whitelist it.
 
 ---
 
