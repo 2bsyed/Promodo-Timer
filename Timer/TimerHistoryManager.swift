@@ -161,50 +161,24 @@ class TimerHistoryManager: ObservableObject {
     }
     
     // Monthly metrics
-    func getMonthlyAverageSessions(for monthDate: Date) -> Double {
+    func getMonthlySessionsMap(for monthDate: Date) -> [Date: Int] {
+        var map: [Date: Int] = [:]
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month], from: monthDate)
-        guard let startOfMonth = calendar.date(from: components) else { return 1.0 }
-        guard let range = calendar.range(of: .day, in: .month, for: startOfMonth) else { return 1.0 }
-        let totalDays = range.count
-        
-        let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth)!
+        guard let startOfMonth = calendar.date(from: components) else { return map }
+        guard let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) else { return map }
         
         let monthSessions = history.filter { $0.timestamp >= startOfMonth && $0.timestamp < endOfMonth }
-        let totalSessions = monthSessions.reduce(0) { $0 + $1.calculatedSessions }
-        
-        let now = Date()
-        let elapsedDays: Int
-        if calendar.isDate(now, equalTo: monthDate, toGranularity: .month) {
-            elapsedDays = calendar.component(.day, from: now)
-        } else if now < startOfMonth {
-            elapsedDays = 1
-        } else {
-            elapsedDays = totalDays
+        for record in monthSessions {
+            let startOfDay = calendar.startOfDay(for: record.timestamp)
+            map[startOfDay, default: 0] += record.calculatedSessions
         }
-        
-        let avg = Double(totalSessions) / Double(max(1, elapsedDays))
-        return avg >= 1.0 ? avg : 1.0
-    }
-    
-    func getSessions(for date: Date) -> Int {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-        return history
-            .filter { $0.timestamp >= startOfDay && $0.timestamp < endOfDay }
-            .reduce(0) { $0 + $1.calculatedSessions }
+        return map
     }
     
     func getTotalSessions(for monthDate: Date) -> Int {
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month], from: monthDate)
-        guard let startOfMonth = calendar.date(from: components) else { return 0 }
-        let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth)!
-        
-        return history
-            .filter { $0.timestamp >= startOfMonth && $0.timestamp < endOfMonth }
-            .reduce(0) { $0 + $1.calculatedSessions }
+        let map = getMonthlySessionsMap(for: monthDate)
+        return map.values.reduce(0, +)
     }
     
     func getCurrentStreak() -> Int {

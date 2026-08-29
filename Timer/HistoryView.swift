@@ -20,44 +20,6 @@ struct VisualEffectView: NSViewRepresentable {
     }
 }
 
-// Apple Fitness Style activity ring (neon red/pink from the Apple Fitness screenshot)
-struct RingView: View {
-    let progress: Double
-    let size: CGFloat
-    
-    private let ringColor = Color(red: 255/255, green: 12/255, blue: 71/255)
-    
-    var body: some View {
-        ZStack {
-            // Background track
-            Circle()
-                .stroke(ringColor.opacity(0.14), lineWidth: 3.0)
-            
-            // Progress arc
-            Circle()
-                .trim(from: 0.0, to: CGFloat(min(progress, 1.0)))
-                .stroke(
-                    ringColor,
-                    style: StrokeStyle(lineWidth: 3.0, lineCap: .round)
-                )
-                .rotationEffect(Angle(degrees: -90))
-            
-            // Overlapping segment for >100% completion
-            if progress > 1.0 {
-                Circle()
-                    .trim(from: 0.0, to: CGFloat(min(progress - 1.0, 1.0)))
-                    .stroke(
-                        Color(red: 255/255, green: 80/255, blue: 120/255),
-                        style: StrokeStyle(lineWidth: 3.0, lineCap: .round)
-                    )
-                    .rotationEffect(Angle(degrees: -90))
-                    .shadow(color: Color.black.opacity(0.35), radius: 1.5, x: 0, y: 0.5)
-            }
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 // Custom Glassmorphic Card Wrapper with 28pt rounded corners and subtle shadow
 struct HistoryCard<Content: View>: View {
     var content: Content
@@ -71,12 +33,19 @@ struct HistoryCard<Content: View>: View {
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Color.black.opacity(0.40))
-                    .background(VisualEffectView(material: .hudWindow, blendingMode: .withinWindow).opacity(0.85))
+                    .fill(Color.black.opacity(0.2))
+                    .background(VisualEffectView(material: .popover, blendingMode: .withinWindow).opacity(0.85))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white.opacity(0.2), Color.white.opacity(0.05)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
             )
             .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
             .shadow(color: Color.black.opacity(0.40), radius: 8, x: 0, y: 4)
@@ -89,7 +58,7 @@ struct HistoryView: View {
     @State private var isCloseHovered = false
     
     private let accentColor = Color(red: 241/255, green: 152/255, blue: 70/255)
-    private let monthlyRingColor = Color(red: 255/255, green: 12/255, blue: 71/255)
+    private let monthlyRingColor = Color(red: 57/255, green: 211/255, blue: 83/255) // GitHub bright green
     
     var body: some View {
         ZStack {
@@ -224,19 +193,19 @@ struct HistoryView: View {
     private func MonthlyCardView() -> some View {
         let calendar = Calendar.current
         let cells = generateCalendarCells(for: activeMonthDate)
-        let monthlyAverage = historyManager.getMonthlyAverageSessions(for: activeMonthDate)
+        let sessionsMap = historyManager.getMonthlySessionsMap(for: activeMonthDate)
         let totalSessions = historyManager.getTotalSessions(for: activeMonthDate)
         let currentStreak = historyManager.getCurrentStreak()
         
         let isCurrentMonth = calendar.isDate(activeMonthDate, equalTo: Date(), toGranularity: .month)
         let todayWeekday = calendar.component(.weekday, from: Date())
-        let todayIndex = todayWeekday % 7
+        let todayIndex = todayWeekday - 1
         
-        let weekDays = ["S", "S", "M", "T", "W", "T", "F"]
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+        let weekDays = ["S", "M", "T", "W", "T", "F", "S"]
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
         
         HistoryCard {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 // Month Navigation Header
                 HStack {
                     Text(monthYearString(from: activeMonthDate))
@@ -290,27 +259,29 @@ struct HistoryView: View {
                     }
                 }
                 
-                // Grid of dates with Apple Fitness rings
-                LazyVGrid(columns: columns, spacing: 4) {
+                // GitHub Style Calendar Grid
+                LazyVGrid(columns: columns, spacing: 6) {
                     ForEach(0..<cells.count, id: \.self) { idx in
                         if let date = cells[idx] {
                             let dayNum = calendar.component(.day, from: date)
-                            let sessions = historyManager.getSessions(for: date)
-                            let progress = monthlyAverage > 0 ? Double(sessions) / monthlyAverage : 0.0
+                            let sessions = sessionsMap[calendar.startOfDay(for: date)] ?? 0
                             let isToday = calendar.isDateInToday(date)
                             
                             ZStack {
-                                // Fitness progress ring
-                                RingView(progress: progress, size: 22)
+                                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                    .fill(githubColor(for: sessions))
+                                    .frame(height: 28)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                            .stroke(Color.white.opacity(isToday ? 0.6 : 0.04), lineWidth: isToday ? 1.5 : 1)
+                                    )
                                 
-
-                                
-                                // Day digit
                                 Text("\(dayNum)")
-                                    .font(.system(size: 9, weight: isToday ? .bold : .medium, design: .rounded))
-                                    .foregroundColor(isToday ? monthlyRingColor : (sessions > 0 ? .white : .white.opacity(0.5)))
+                                    .font(.system(size: 10, weight: isToday ? .bold : .medium, design: .rounded))
+                                    // Use white text if there are sessions (dark green bg) or if it's today. 
+                                    // If no sessions (dark gray bg), use subtle white.
+                                    .foregroundColor(sessions > 0 ? .white : .white.opacity(0.4))
                             }
-                            .frame(height: 28)
                         } else {
                             Color.clear
                                 .frame(height: 28)
@@ -351,6 +322,17 @@ struct HistoryView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - GitHub Contribution Color
+    private func githubColor(for sessions: Int) -> Color {
+        switch sessions {
+        case 0: return Color(red: 22/255, green: 27/255, blue: 34/255).opacity(0.6) // Dark base
+        case 1: return Color(red: 14/255, green: 68/255, blue: 41/255)
+        case 2: return Color(red: 0/255, green: 109/255, blue: 50/255)
+        case 3: return Color(red: 38/255, green: 166/255, blue: 65/255)
+        default: return Color(red: 57/255, green: 211/255, blue: 83/255)
         }
     }
     

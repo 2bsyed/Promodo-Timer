@@ -10,3 +10,5 @@ DerivedData/
 *.playgrounds/
 # macOS
 .DS_Store
+Timer.app/
+*.dmg
