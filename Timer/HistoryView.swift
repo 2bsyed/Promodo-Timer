@@ -54,7 +54,6 @@ struct HistoryCard<Content: View>: View {
 
 struct HistoryView: View {
     @ObservedObject var historyManager = TimerHistoryManager.shared
-    @State private var activeMonthDate = Date()
     @State private var isCloseHovered = false
     
     private let accentColor = Color(red: 241/255, green: 152/255, blue: 70/255)
@@ -126,8 +125,11 @@ struct HistoryView: View {
                 // Weekly Card
                 WeeklyCardView()
                 
-                // Monthly Card
-                MonthlyCardView()
+                // GitHub Grid Card
+                GitHubGridCardView()
+                
+                // Lifetime Stats Card
+                LifetimeStatsCardView()
                 
                 Spacer(minLength: 0)
             }
@@ -188,151 +190,107 @@ struct HistoryView: View {
         }
     }
     
-    // MARK: - Monthly Card Component
+    // MARK: - GitHub Grid Card Component
     @ViewBuilder
-    private func MonthlyCardView() -> some View {
+    private func GitHubGridCardView() -> some View {
         let calendar = Calendar.current
-        let cells = generateCalendarCells(for: activeMonthDate)
-        let sessionsMap = historyManager.getMonthlySessionsMap(for: activeMonthDate)
-        let totalSessions = historyManager.getTotalSessions(for: activeMonthDate)
-        let currentStreak = historyManager.getCurrentStreak()
+        let today = calendar.startOfDay(for: Date())
+        let columns = 15
+        let totalDays = columns * 7
         
-        let isCurrentMonth = calendar.isDate(activeMonthDate, equalTo: Date(), toGranularity: .month)
-        let todayWeekday = calendar.component(.weekday, from: Date())
-        let todayIndex = todayWeekday - 1
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToSubtract = (weekday - 1) + ((columns - 1) * 7)
+        let startSunday = calendar.date(byAdding: .day, value: -daysToSubtract, to: today)!
         
-        let weekDays = ["S", "M", "T", "W", "T", "F", "S"]
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+        let sessionsMap = historyManager.getRecentSessionsMap(days: daysToSubtract + 7)
+        
+        let gridRows = Array(repeating: GridItem(.fixed(16), spacing: 4), count: 7)
+        
+        let dates: [Date] = (0..<totalDays).map { i in
+            calendar.date(byAdding: .day, value: i, to: startSunday)!
+        }
         
         HistoryCard {
-            VStack(alignment: .leading, spacing: 12) {
-                // Month Navigation Header
-                HStack {
-                    Text(monthYearString(from: activeMonthDate))
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(accentColor)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 8) {
-                        Button(action: {
-                            if let prevMonth = calendar.date(byAdding: .month, value: -1, to: activeMonthDate) {
-                                activeMonthDate = prevMonth
-                            }
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white.opacity(0.6))
-                                .frame(width: 22, height: 22)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
+            // Container with same explicit padding as the Weekly Card's content
+            // Weekly content: 44 (header) + 8 (spacing) + 95 (chart) = 147
+            // Grid content: (16 * 7) + (4 * 6) = 136
+            // We use a frame of 147 so the cards match exactly in size.
+            VStack {
+                Spacer(minLength: 0)
+                LazyHGrid(rows: gridRows, spacing: 4) {
+                    ForEach(0..<dates.count, id: \.self) { idx in
+                        let date = dates[idx]
+                        let sessions = sessionsMap[date] ?? 0
                         
-                        Button(action: {
-                            if let nextMonth = calendar.date(byAdding: .month, value: 1, to: activeMonthDate) {
-                                activeMonthDate = nextMonth
-                            }
-                        }) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white.opacity(0.6))
-                                .frame(width: 22, height: 22)
-                                .background(Color.white.opacity(0.06))
-                                .clipShape(Circle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        RoundedRectangle(cornerRadius: 3.0, style: .continuous)
+                            .fill(date > today ? githubColor(for: 0) : githubColor(for: sessions))
+                            .frame(width: 16, height: 16)
                     }
                 }
-                
-                // Days of week header row
-                HStack(spacing: 0) {
-                    ForEach(0..<7, id: \.self) { i in
-                        let isTodayHeader = isCurrentMonth && (i == todayIndex)
-                        Text(weekDays[i])
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(isTodayHeader ? .white : .white.opacity(0.3))
-                            .frame(width: 18, height: 18)
-                            .background(isTodayHeader ? monthlyRingColor : Color.clear)
-                            .clipShape(Circle())
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                
-                // GitHub Style Calendar Grid
-                LazyVGrid(columns: columns, spacing: 6) {
-                    ForEach(0..<cells.count, id: \.self) { idx in
-                        if let date = cells[idx] {
-                            let dayNum = calendar.component(.day, from: date)
-                            let sessions = sessionsMap[calendar.startOfDay(for: date)] ?? 0
-                            let isToday = calendar.isDateInToday(date)
-                            
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                    .fill(githubColor(for: sessions))
-                                    .frame(height: 28)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                            .stroke(Color.white.opacity(isToday ? 0.6 : 0.04), lineWidth: isToday ? 1.5 : 1)
-                                    )
-                                
-                                Text("\(dayNum)")
-                                    .font(.system(size: 10, weight: isToday ? .bold : .medium, design: .rounded))
-                                    // Use white text if there are sessions (dark green bg) or if it's today. 
-                                    // If no sessions (dark gray bg), use subtle white.
-                                    .foregroundColor(sessions > 0 ? .white : .white.opacity(0.4))
-                            }
-                        } else {
-                            Color.clear
-                                .frame(height: 28)
-                        }
-                    }
-                }
-                
-                Divider()
-                    .background(Color.white.opacity(0.06))
-                    .padding(.vertical, 1)
-                
-                // Footer metrics
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("\(totalSessions)")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(accentColor)
-                        Text("Total Sessions")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.4))
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 6) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(monthlyRingColor)
-                        
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("\(currentStreak) \(currentStreak == 1 ? "day" : "days")")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(accentColor)
-                            Text("Current Streak")
-                                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                                .foregroundColor(.white.opacity(0.4))
-                        }
-                    }
-                }
+                Spacer(minLength: 0)
             }
+            .frame(height: 147)
         }
     }
     
     // MARK: - GitHub Contribution Color
     private func githubColor(for sessions: Int) -> Color {
         switch sessions {
-        case 0: return Color(red: 22/255, green: 27/255, blue: 34/255).opacity(0.6) // Dark base
+        case 0: return Color(red: 22/255, green: 27/255, blue: 34/255).opacity(0.8) // Dark base
         case 1: return Color(red: 14/255, green: 68/255, blue: 41/255)
         case 2: return Color(red: 0/255, green: 109/255, blue: 50/255)
         case 3: return Color(red: 38/255, green: 166/255, blue: 65/255)
         default: return Color(red: 57/255, green: 211/255, blue: 83/255)
+        }
+    }
+    
+    // MARK: - Lifetime Stats Card Component
+    @ViewBuilder
+    private func LifetimeStatsCardView() -> some View {
+        HistoryCard {
+            HStack(spacing: 0) {
+                // Streak
+                VStack(spacing: 2) {
+                    Text("Streak")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.4))
+                    Text("\(historyManager.getCurrentStreak())d")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(monthlyRingColor)
+                }
+                .frame(maxWidth: .infinity)
+                
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .frame(height: 30)
+                
+                // Total Time
+                VStack(spacing: 2) {
+                    Text("Total Time")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.4))
+                    Text(formatDuration(seconds: historyManager.getTotalTimeAllTime()))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .frame(maxWidth: .infinity)
+                
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .frame(height: 30)
+                
+                // Total Sessions
+                VStack(spacing: 2) {
+                    Text("Sessions")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.4))
+                    Text("\(historyManager.getTotalSessionsAllTime())")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(accentColor)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, 4)
         }
     }
     
@@ -345,34 +303,6 @@ struct HistoryView: View {
         } else {
             return "\(minutes)m"
         }
-    }
-    
-    private func monthYearString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
-    }
-    
-    private func generateCalendarCells(for monthDate: Date) -> [Date?] {
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month], from: monthDate)
-        guard let startOfMonth = calendar.date(from: components) else { return [] }
-        guard let range = calendar.range(of: .day, in: .month, for: startOfMonth) else { return [] }
-        let numberOfDays = range.count
-        
-        let weekdayOfFirst = calendar.component(.weekday, from: startOfMonth)
-        let offset = weekdayOfFirst % 7
-        
-        var cells: [Date?] = []
-        for _ in 0..<offset {
-            cells.append(nil)
-        }
-        for day in 1...numberOfDays {
-            if let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) {
-                cells.append(date)
-            }
-        }
-        return cells
     }
 }
 

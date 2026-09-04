@@ -9,6 +9,7 @@ import SwiftUI
 struct timerView: View {
     @ObservedObject var viewModel: TimerViewModel
     @State private var isHovered = false
+    @State private var isBlinking = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -44,13 +45,43 @@ struct timerView: View {
                 .animation(.linear(duration: 1.0), value: progress)
                 
                 // Digital remaining time text centered in the window
-                Text(viewModel.timeString(from: viewModel.remainingTime))
-                    .font(.system(size: 52, weight: .light, design: .rounded))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .foregroundColor(Color(red: 241/255, green: 152/255, blue: 70/255))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                HStack(spacing: 0) {
+                    let timeString = viewModel.timeString(from: viewModel.remainingTime)
+                    let timeParts = timeString.split(separator: ":")
+                    if timeParts.count == 2 {
+                        Text(timeParts[0])
+                        Text(":")
+                            .opacity(viewModel.timerState == .paused ? (isBlinking ? 0.3 : 1.0) : 1.0)
+                            .offset(y: -4)
+                        Text(timeParts[1])
+                    } else {
+                        Text(timeString)
+                    }
+                }
+                .font(.system(size: 52, weight: .light, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .foregroundColor(Color(red: 241/255, green: 152/255, blue: 70/255))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onChange(of: viewModel.timerState) { state in
+                        if state == .paused {
+                            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                isBlinking = true
+                            }
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isBlinking = false
+                            }
+                        }
+                    }
+                    .onAppear {
+                        if viewModel.timerState == .paused {
+                            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                isBlinking = true
+                            }
+                        }
+                    }
                 
                 // Hover close button in top-left corner
                 VStack {

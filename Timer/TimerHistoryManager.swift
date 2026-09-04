@@ -160,25 +160,27 @@ class TimerHistoryManager: ObservableObject {
         return ((currentWeekSeconds - previousWeekSeconds) / previousWeekSeconds) * 100.0
     }
     
-    // Monthly metrics
-    func getMonthlySessionsMap(for monthDate: Date) -> [Date: Int] {
+    // GitHub Grid metrics
+    func getRecentSessionsMap(days: Int) -> [Date: Int] {
         var map: [Date: Int] = [:]
         let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month], from: monthDate)
-        guard let startOfMonth = calendar.date(from: components) else { return map }
-        guard let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) else { return map }
+        let today = calendar.startOfDay(for: Date())
+        guard let startDate = calendar.date(byAdding: .day, value: -days, to: today) else { return map }
         
-        let monthSessions = history.filter { $0.timestamp >= startOfMonth && $0.timestamp < endOfMonth }
-        for record in monthSessions {
+        let recentSessions = history.filter { $0.timestamp >= startDate }
+        for record in recentSessions {
             let startOfDay = calendar.startOfDay(for: record.timestamp)
             map[startOfDay, default: 0] += record.calculatedSessions
         }
         return map
     }
     
-    func getTotalSessions(for monthDate: Date) -> Int {
-        let map = getMonthlySessionsMap(for: monthDate)
-        return map.values.reduce(0, +)
+    func getTotalSessionsAllTime() -> Int {
+        return history.reduce(0) { $0 + $1.calculatedSessions }
+    }
+    
+    func getTotalTimeAllTime() -> Double {
+        return history.reduce(0.0) { $0 + ($1.durationMinutes * 60.0) }
     }
     
     func getCurrentStreak() -> Int {
